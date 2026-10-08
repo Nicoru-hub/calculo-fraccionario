@@ -1,1 +1,1 @@
-# Simplification module
+# Package init file

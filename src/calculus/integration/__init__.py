@@ -1,1 +1,1 @@
-# Integration module
+# Package init file

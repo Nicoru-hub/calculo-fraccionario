@@ -1,1 +1,1 @@
-# Fractional calculus module
+# Package init file

@@ -1,1 +1,1 @@
-# Constants module
+# Package init file

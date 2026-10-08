@@ -1,1 +1,1 @@
-# Tests module
+# Package init file

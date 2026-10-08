@@ -1,1 +1,1 @@
-# Differentiation module
+# Package init file

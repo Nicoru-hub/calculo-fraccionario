@@ -1,1 +1,1 @@
-# Parser module
+# Package init file
