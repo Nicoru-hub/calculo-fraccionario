@@ -14,6 +14,7 @@ class Expression:
 
 @dataclass(frozen=True)
 class Number(Expression):
+    """Numeric literal with exact Fraction representation."""
     value: Fraction
 
     def __init__(self, value):
@@ -32,6 +33,7 @@ class Number(Expression):
 
 @dataclass(frozen=True)
 class Variable(Expression):
+    """Variable (e.g., x, y, z)."""
     name: str
 
     def __str__(self):
@@ -40,76 +42,8 @@ class Variable(Expression):
 
 @dataclass(frozen=True)
 class Constant(Expression):
+    """Named constant (e.g., pi, e, phi)."""
     name: str
 
     def __str__(self):
         return self.name
-
-
-@dataclass(frozen=True)
-class Add(Expression):
-    left: Expression
-    right: Expression
-
-    def __str__(self):
-        return f"({self.left} + {self.right})"
-
-
-@dataclass(frozen=True)
-class Sub(Expression):
-    left: Expression
-    right: Expression
-
-    def __str__(self):
-        return f"({self.left} - {self.right})"
-
-
-@dataclass(frozen=True)
-class Mul(Expression):
-    left: Expression
-    right: Expression
-
-    def __str__(self):
-        return f"({self.left} * {self.right})"
-
-
-@dataclass(frozen=True)
-class Div(Expression):
-    left: Expression
-    right: Expression
-
-    def __str__(self):
-        return f"({self.left} / {self.right})"
-
-
-@dataclass(frozen=True)
-class Pow(Expression):
-    base: Expression
-    exponent: Expression
-
-    def __str__(self):
-        return f"({self.base}^{self.exponent})"
-
-
-@dataclass(frozen=True)
-class Neg(Expression):
-    expr: Expression
-
-    def __str__(self):
-        return f"(-{self.expr})"
-
-
-@dataclass(frozen=True)
-class Function(Expression):
-    name: str
-    arguments: tuple[Expression, ...]
-
-    def __str__(self):
-        args = ", ".join(str(a) for a in self.arguments)
-        return f"{self.name}({args})"
-
-
-# Constant definitions
-pi = Constant("pi")
-e = Constant("e")
-phi = Constant("phi")
