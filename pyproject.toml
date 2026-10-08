@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "calculo-fraccionario"
+version = "0.1.0"
+description = "Cálculo simbólico con derivación ordinaria, integral, fraccionaria y simbólica"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+  "streamlit>=1.40.0",
+  "pytest>=8.0.0",
+]
