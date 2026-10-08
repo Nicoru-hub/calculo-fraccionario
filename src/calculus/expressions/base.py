@@ -2,59 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from fractions import Fraction
-from typing import Iterable
 
 
+@dataclass(frozen=True)
 class Expression:
-    """Base class for all symbolic expressions."""
+    """Base class for all mathematical expressions."""
 
-    def __add__(self, other):
-        from calculus.expressions.operations import Add
-
-        return Add(self, other)
-
-    def __sub__(self, other):
-        from calculus.expressions.operations import Sub
-
-        return Sub(self, other)
-
-    def __mul__(self, other):
-        from calculus.expressions.operations import Mul
-
-        return Mul(self, other)
-
-    def __truediv__(self, other):
-        from calculus.expressions.operations import Div
-
-        return Div(self, other)
-
-    def __pow__(self, other):
-        from calculus.expressions.operations import Pow
-
-        return Pow(self, other)
-
-    def __neg__(self):
-        from calculus.expressions.operations import Neg
-
-        return Neg(self)
-
-    def simplify(self):
-        from calculus.simplification.simplifier import simplify_expression
-
-        return simplify_expression(self)
-
-    def diff(self, variable: str):
-        from calculus.differentiation.rules import differentiate
-
-        return differentiate(self, variable)
-
-    def __str__(self):
-        from calculus.formatter.formatter import to_string
-
-        return to_string(self)
-
-    def __repr__(self):
-        return self.__str__()
+    def __str__(self) -> str:
+        raise NotImplementedError
 
 
 @dataclass(frozen=True)
@@ -63,18 +18,16 @@ class Number(Expression):
 
     def __init__(self, value):
         if isinstance(value, int):
-            value = Fraction(value, 1)
+            object.__setattr__(self, "value", Fraction(value))
         elif isinstance(value, Fraction):
-            pass
-        elif isinstance(value, float):
-            # Keep exact rational values when possible.
-            value = Fraction(str(value)).limit_denominator()
+            object.__setattr__(self, "value", value)
         else:
-            raise TypeError(f"Unsupported numeric type: {type(value)!r}")
-        object.__setattr__(self, "value", value)
+            object.__setattr__(self, "value", Fraction(str(value)))
 
     def __str__(self):
-        return str(self.value.numerator) if self.value.denominator == 1 else f"{self.value.numerator}/{self.value.denominator}"
+        if self.value.denominator == 1:
+            return str(self.value.numerator)
+        return str(self.value)
 
 
 @dataclass(frozen=True)
@@ -88,17 +41,75 @@ class Variable(Expression):
 @dataclass(frozen=True)
 class Constant(Expression):
     name: str
-    value: str | None = None
 
     def __str__(self):
         return self.name
 
 
 @dataclass(frozen=True)
-class Rational(Number):
-    pass
+class Add(Expression):
+    left: Expression
+    right: Expression
+
+    def __str__(self):
+        return f"({self.left} + {self.right})"
 
 
 @dataclass(frozen=True)
-class Integer(Number):
-    pass
+class Sub(Expression):
+    left: Expression
+    right: Expression
+
+    def __str__(self):
+        return f"({self.left} - {self.right})"
+
+
+@dataclass(frozen=True)
+class Mul(Expression):
+    left: Expression
+    right: Expression
+
+    def __str__(self):
+        return f"({self.left} * {self.right})"
+
+
+@dataclass(frozen=True)
+class Div(Expression):
+    left: Expression
+    right: Expression
+
+    def __str__(self):
+        return f"({self.left} / {self.right})"
+
+
+@dataclass(frozen=True)
+class Pow(Expression):
+    base: Expression
+    exponent: Expression
+
+    def __str__(self):
+        return f"({self.base}^{self.exponent})"
+
+
+@dataclass(frozen=True)
+class Neg(Expression):
+    expr: Expression
+
+    def __str__(self):
+        return f"(-{self.expr})"
+
+
+@dataclass(frozen=True)
+class Function(Expression):
+    name: str
+    arguments: tuple[Expression, ...]
+
+    def __str__(self):
+        args = ", ".join(str(a) for a in self.arguments)
+        return f"{self.name}({args})"
+
+
+# Constant definitions
+pi = Constant("pi")
+e = Constant("e")
+phi = Constant("phi")
