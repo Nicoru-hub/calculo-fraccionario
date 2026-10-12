@@ -2,7 +2,7 @@ import pytest
 from calculus.fractional.riemann_liouville import riemann_liouville_derivative
 from calculus.fractional.gamma import GammaCalculator
 from calculus.parser.parser import Parser
-from calculus.expressions.base import Number, Variable
+from calculus.expressions.base import Number, Variable, Constant
 from calculus.expressions.operations import Pow, Div, Mul
 from calculus.expressions.functions import Gamma
 from fractions import Fraction
