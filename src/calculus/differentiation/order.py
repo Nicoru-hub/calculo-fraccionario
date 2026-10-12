@@ -26,7 +26,7 @@ class IntegralOrder(Expression):
     order: int
 
     def __str__(self):
-        return f"D^{-{self.order}({self.expr})}"
+        return f"D^-{self.order}({self.expr})"
 
 
 @dataclass(frozen=True)
