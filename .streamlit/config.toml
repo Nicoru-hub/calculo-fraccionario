@@ -1,0 +1,11 @@
+[general]
+headless = true
+logger.level = "info"
+
+[browser]
+gatherUsageStats = false
+
+[server]
+maxUploadSize = 200
+port = 8501
+enableXsrfProtection = false
