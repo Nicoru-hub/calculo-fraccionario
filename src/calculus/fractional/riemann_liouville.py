@@ -88,21 +88,20 @@ class FractionalCalculusEngine:
     
     @staticmethod
     def approximate_gamma(n: float) -> float:
-        """Approximate Gamma function using Stirling's approximation or scipy.
+        """Approximate Gamma function using Stirling's approximation.
         
-        For now, use a simple approximation or return None if not implementable.
-        In production, use scipy.special.gamma.
+        Uses only Python standard library (no scipy dependency).
+        Γ(n) ≈ sqrt(2π) * (n/e)^n for large n
         """
-        try:
-            from scipy.special import gamma as scipy_gamma
-            return scipy_gamma(n)
-        except ImportError:
-            # Fallback: Stirling's approximation for large n
-            if n > 0:
-                import math
-                # Γ(n) ≈ sqrt(2π) * (n/e)^n for large n
-                return math.sqrt(2 * math.pi) * (n / math.e) ** n
+        if n <= 0:
             return None
+        
+        if isinstance(n, int) and n <= 20:
+            # Use math.factorial for small integers
+            return float(math.factorial(n - 1))
+        
+        # Stirling's approximation
+        return math.sqrt(2 * math.pi) * (n / math.e) ** n
 
 
 def riemann_liouville_derivative(
