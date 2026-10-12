@@ -1,17 +1,99 @@
 from __future__ import annotations
 
-from calculus.parser.tokenizer import Tokenizer, TokenType, Token
+from typing import Optional
 from calculus.expressions.base import Expression, Number, Variable, Constant
 from calculus.expressions.operations import Add, Sub, Mul, Div, Pow, Neg
 from calculus.expressions.functions import (
-    Sin, Cos, Tan, Cot, Sec, Csc, Exp, Ln, Log, Sqrt, Abs, Gamma
+    Sin, Cos, Tan, Exp, Ln, Log, Sqrt, Abs
 )
-from calculus.constants.constants import pi, e, phi
+from calculus.constants.constants import pi, e
 from fractions import Fraction
 
 
+class Token:
+    """Represents a single token in the mathematical expression."""
+    
+    def __init__(self, type_: str, value: str):
+        self.type = type_
+        self.value = value
+    
+    def __repr__(self):
+        return f"Token({self.type}, {self.value})"
+
+
+class Tokenizer:
+    """Converts mathematical expression string into tokens."""
+    
+    OPERATORS = {'+', '-', '*', '/', '^', '('}
+    FUNCTIONS = {'sin', 'cos', 'tan', 'exp', 'ln', 'log', 'sqrt', 'abs', 'gamma'}
+    CONSTANTS = {'pi', 'e', 'phi'}
+    
+    def __init__(self, text: str):
+        self.text = text.strip()
+        self.pos = 0
+        self.tokens = []
+    
+    def tokenize(self) -> list[Token]:
+        """Tokenize the expression."""
+        while self.pos < len(self.text):
+            if self.text[self.pos].isspace():
+                self.pos += 1
+                continue
+            
+            if self.text[self.pos] in self.OPERATORS or self.text[self.pos] == ')':
+                self.tokens.append(Token('OP', self.text[self.pos]))
+                self.pos += 1
+            elif self.text[self.pos].isdigit() or self.text[self.pos] == '.':
+                self._read_number()
+            elif self.text[self.pos].isalpha() or self.text[self.pos] == '_':
+                self._read_identifier()
+            else:
+                raise ValueError(f"Unexpected character: {self.text[self.pos]}")
+        
+        return self.tokens
+    
+    def _read_number(self) -> None:
+        """Read a number (integer or fraction)."""
+        start = self.pos
+        
+        # Read integer part
+        while self.pos < len(self.text) and self.text[self.pos].isdigit():
+            self.pos += 1
+        
+        # Read decimal part
+        if self.pos < len(self.text) and self.text[self.pos] == '.':
+            self.pos += 1
+            while self.pos < len(self.text) and self.text[self.pos].isdigit():
+                self.pos += 1
+        
+        # Read fraction part (e.g., 1/2)
+        if self.pos < len(self.text) and self.text[self.pos] == '/':
+            self.pos += 1
+            while self.pos < len(self.text) and self.text[self.pos].isdigit():
+                self.pos += 1
+        
+        number_str = self.text[start:self.pos]
+        self.tokens.append(Token('NUMBER', number_str))
+    
+    def _read_identifier(self) -> None:
+        """Read a function, constant, or variable name."""
+        start = self.pos
+        
+        while self.pos < len(self.text) and (self.text[self.pos].isalnum() or self.text[self.pos] == '_'):
+            self.pos += 1
+        
+        name = self.text[start:self.pos]
+        
+        if name in self.FUNCTIONS:
+            self.tokens.append(Token('FUNCTION', name))
+        elif name in self.CONSTANTS:
+            self.tokens.append(Token('CONSTANT', name))
+        else:
+            self.tokens.append(Token('VARIABLE', name))
+
+
 class Parser:
-    """Parse mathematical expressions into AST."""
+    """Parses tokens into an Abstract Syntax Tree (AST)."""
     
     def __init__(self, tokens: list[Token]):
         self.tokens = tokens
@@ -19,29 +101,27 @@ class Parser:
     
     @staticmethod
     def parse(text: str) -> Expression:
-        """Parse a string into an Expression."""
+        """Parse a mathematical expression string."""
         tokenizer = Tokenizer(text)
         tokens = tokenizer.tokenize()
         parser = Parser(tokens)
         return parser._parse_expression()
     
-    def _current_token(self) -> Token:
+    def _current_token(self) -> Optional[Token]:
+        """Get the current token without advancing."""
         if self.pos < len(self.tokens):
             return self.tokens[self.pos]
-        return self.tokens[-1]  # EOF
+        return None
     
-    def _peek_token(self, offset=1) -> Token:
-        if self.pos + offset < len(self.tokens):
-            return self.tokens[self.pos + offset]
-        return self.tokens[-1]  # EOF
-    
-    def _advance(self):
+    def _advance(self) -> None:
+        """Move to the next token."""
         self.pos += 1
     
-    def _expect(self, token_type: TokenType) -> Token:
+    def _expect(self, value: str) -> Token:
+        """Expect a specific token value."""
         token = self._current_token()
-        if token.type != token_type:
-            raise ValueError(f"Expected {token_type}, got {token.type}")
+        if not token or token.value != value:
+            raise ValueError(f"Expected {value}, got {token}")
         self._advance()
         return token
     
@@ -49,106 +129,115 @@ class Parser:
         """Parse addition/subtraction (lowest precedence)."""
         left = self._parse_term()
         
-        while self._current_token().type in (TokenType.PLUS, TokenType.MINUS):
-            if self._current_token().type == TokenType.PLUS:
-                self._advance()
-                right = self._parse_term()
+        while self._current_token() and self._current_token().value in ['+', '-']:
+            op = self._current_token().value
+            self._advance()
+            right = self._parse_term()
+            
+            if op == '+':
                 left = Add(left, right)
-            else:  # MINUS
-                self._advance()
-                right = self._parse_term()
+            else:
                 left = Sub(left, right)
         
         return left
     
     def _parse_term(self) -> Expression:
-        """Parse multiplication/division."""
-        left = self._parse_unary()
+        """Parse multiplication/division (medium precedence)."""
+        left = self._parse_factor()
         
-        while self._current_token().type in (TokenType.MULTIPLY, TokenType.DIVIDE):
-            if self._current_token().type == TokenType.MULTIPLY:
-                self._advance()
-                right = self._parse_unary()
+        while self._current_token() and self._current_token().value in ['*', '/']:
+            op = self._current_token().value
+            self._advance()
+            right = self._parse_factor()
+            
+            if op == '*':
                 left = Mul(left, right)
-            else:  # DIVIDE
-                self._advance()
-                right = self._parse_unary()
+            else:
                 left = Div(left, right)
         
         return left
     
-    def _parse_unary(self) -> Expression:
-        """Parse unary operators and handle implicit multiplication."""
-        if self._current_token().type == TokenType.MINUS:
-            self._advance()
-            expr = self._parse_unary()
-            return Neg(expr)
+    def _parse_factor(self) -> Expression:
+        """Parse exponentiation (high precedence)."""
+        left = self._parse_unary()
         
-        return self._parse_power()
-    
-    def _parse_power(self) -> Expression:
-        """Parse exponentiation (right-associative)."""
-        left = self._parse_atom()
-        
-        if self._current_token().type in (TokenType.POWER,):
+        if self._current_token() and self._current_token().value == '^':
             self._advance()
-            right = self._parse_power()  # Right-associative
+            right = self._parse_factor()  # Right-associative
             return Pow(left, right)
         
         return left
     
-    def _parse_atom(self) -> Expression:
-        """Parse atoms: numbers, variables, constants, functions, parentheses."""
+    def _parse_unary(self) -> Expression:
+        """Parse unary operators (negation)."""
         token = self._current_token()
         
-        if token.type == TokenType.NUMBER:
+        if token and token.value == '-':
             self._advance()
-            # Parse as fraction
-            if "." in token.value:
-                frac = Fraction(token.value).limit_denominator()
-            else:
-                frac = Fraction(int(token.value))
-            return Number(frac)
+            expr = self._parse_unary()
+            return Neg(expr)
         
-        elif token.type == TokenType.VARIABLE:
-            self._advance()
-            return Variable(token.value)
+        return self._parse_primary()
+    
+    def _parse_primary(self) -> Expression:
+        """Parse primary expressions (numbers, variables, functions, parentheses)."""
+        token = self._current_token()
         
-        elif token.type == TokenType.CONSTANT:
+        if not token:
+            raise ValueError("Unexpected end of expression")
+        
+        # Number
+        if token.type == 'NUMBER':
             self._advance()
-            if token.value == "pi":
+            return Number(Fraction(token.value))
+        
+        # Constant
+        if token.type == 'CONSTANT':
+            self._advance()
+            if token.value == 'pi':
                 return pi
-            elif token.value == "e":
+            elif token.value == 'e':
                 return e
-            elif token.value == "phi":
-                return phi
             else:
                 return Constant(token.value)
         
-        elif token.type == TokenType.FUNCTION:
+        # Variable
+        if token.type == 'VARIABLE':
+            self._advance()
+            return Variable(token.value)
+        
+        # Function
+        if token.type == 'FUNCTION':
             func_name = token.value
             self._advance()
-            self._expect(TokenType.LPAREN)
+            self._expect('(')
             arg = self._parse_expression()
-            self._expect(TokenType.RPAREN)
+            self._expect(')')
             
-            # Map function name to class
-            func_map = {
-                "sin": Sin, "cos": Cos, "tan": Tan, "cot": Cot,
-                "sec": Sec, "csc": Csc, "exp": Exp, "ln": Ln,
-                "log": Log, "sqrt": Sqrt, "abs": Abs, "gamma": Gamma
-            }
-            
-            if func_name in func_map:
-                return func_map[func_name](arg)
+            if func_name == 'sin':
+                return Sin(arg)
+            elif func_name == 'cos':
+                return Cos(arg)
+            elif func_name == 'tan':
+                return Tan(arg)
+            elif func_name == 'exp':
+                return Exp(arg)
+            elif func_name == 'ln':
+                return Ln(arg)
+            elif func_name == 'log':
+                return Log(arg)
+            elif func_name == 'sqrt':
+                return Sqrt(arg)
+            elif func_name == 'abs':
+                return Abs(arg)
             else:
                 raise ValueError(f"Unknown function: {func_name}")
         
-        elif token.type == TokenType.LPAREN:
+        # Parenthesized expression
+        if token.value == '(':
             self._advance()
             expr = self._parse_expression()
-            self._expect(TokenType.RPAREN)
+            self._expect(')')
             return expr
         
-        else:
-            raise ValueError(f"Unexpected token: {token.type}")
+        raise ValueError(f"Unexpected token: {token}")
