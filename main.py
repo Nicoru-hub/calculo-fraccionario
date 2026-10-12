@@ -7,10 +7,7 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 import streamlit as st
 from calculus.parser.parser import Parser
 from calculus.differentiation.rules import differentiate
-from calculus.differentiation.order import evaluate_order
-from calculus.integration.rules import integrate
 from calculus.simplification.simplifier import simplify_expression
-from calculus.expressions.base import Expression
 
 # Page config
 st.set_page_config(
@@ -20,20 +17,20 @@ st.set_page_config(
 )
 
 st.title("🧮 Calculadora de Cálculo Simbólico")
-st.markdown("**Derivación de orden arbitrario · Integración · Simplificación**")
+st.markdown("**Derivación de orden arbitrario · Simplificación**")
 
 st.markdown("""
 ---
 ### ¿Cómo usarla?
-1. Escribe la expresión matemática que quieras derivar, integrar o simplificar
-2. Elige la operación y los parámetros
+1. Escribe la expresión matemática que quieras derivar o simplificar
+2. Elige la operación
 3. Presiona el botón para ver el resultado
 """)
 
 # Sidebar for operation selection
 operation = st.sidebar.radio(
     "📊 Operación",
-    ["Derivación", "Integración", "Simplificación"],
+    ["Derivación", "Simplificación"],
     help="Elige qué operación deseas realizar"
 )
 
@@ -41,7 +38,7 @@ variable = st.sidebar.text_input(
     "📝 Variable",
     value="x",
     max_chars=1,
-    help="La variable con respecto a la que se derivará/integrará"
+    help="La variable con respecto a la que se derivará"
 )
 
 # Main input
@@ -93,66 +90,21 @@ if expr_input:
             st.markdown("---")
             st.subheader("🔄 Derivación")
             
-            col1, col2 = st.columns([1, 2])
-            
-            with col1:
-                order_type = st.radio(
-                    "Tipo de orden:",
-                    ["Positivo", "Cero", "Negativo", "Fraccionario"],
-                    help="Elige el tipo de derivada que deseas calcular"
-                )
-            
-            with col2:
-                if order_type == "Positivo":
-                    order = st.slider(
-                        "Orden (número de derivadas)",
-                        min_value=1,
-                        max_value=5,
-                        value=1,
-                        help="1ª derivada, 2ª derivada, etc."
-                    )
-                elif order_type == "Cero":
-                    order = 0
-                    st.info("Orden 0: devuelve la expresión simplificada")
-                elif order_type == "Negativo":
-                    order = -st.slider(
-                        "Número de integrales",
-                        min_value=1,
-                        max_value=3,
-                        value=1
-                    )
-                else:  # Fraccionario
-                    order = st.slider(
-                        "Orden fraccionario",
-                        min_value=0.1,
-                        max_value=1.0,
-                        step=0.1,
-                        value=0.5,
-                        help="Derivadas de orden no entero (cálculo fraccionario)"
-                    )
+            order = st.slider(
+                "Orden de la derivada",
+                min_value=1,
+                max_value=5,
+                value=1,
+                help="1ª derivada, 2ª derivada, etc."
+            )
             
             col1, col2, col3 = st.columns(3)
             with col2:
                 if st.button("🚀 Derivar", use_container_width=True):
                     try:
-                        result = evaluate_order(expr, order, variable)
-                        st.markdown("### Resultado:")
-                        st.latex(f"{result}")
-                        st.code(f"{result}", language="text")
-                    except Exception as e:
-                        st.error(f"❌ Error: {e}")
-        
-        elif operation == "Integración":
-            st.markdown("---")
-            st.subheader("∫ Integración")
-            
-            st.info("Se calculará la integral indefinida (sin constante de integración explícita)")
-            
-            col1, col2, col3 = st.columns(3)
-            with col2:
-                if st.button("🚀 Integrar", use_container_width=True):
-                    try:
-                        result = integrate(expr, variable)
+                        result = expr
+                        for _ in range(order):
+                            result = differentiate(result, variable)
                         st.markdown("### Resultado:")
                         st.latex(f"{result}")
                         st.code(f"{result}", language="text")
