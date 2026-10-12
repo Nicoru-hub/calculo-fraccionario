@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+# Add src to Python path so calculus module is importable
+sys.path.insert(0, str(Path(__file__).parent / "src"))
+
 import streamlit as st
 from calculus.parser.parser import Parser
 from calculus.differentiation.rules import differentiate
