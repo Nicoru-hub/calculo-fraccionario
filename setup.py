@@ -29,7 +29,7 @@ setup(
     ],
     python_requires=">=3.9",
     install_requires=[
-        "streamlit>=1.28.0",
+        "streamlit>=1.40.0",
         "numpy>=1.24.0",
         "scipy>=1.10.0",
     ],
